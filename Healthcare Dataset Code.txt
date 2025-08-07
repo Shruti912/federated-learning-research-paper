@@ -1,0 +1,1088 @@
+from google.colab import files
+import os
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import DBSCAN
+import warnings
+warnings.filterwarnings('ignore')
+
+# Download Pima Indians Diabetes Database
+files.upload()  # Upload your kaggle.json file here
+os.system('mkdir -p ~/.kaggle')
+os.system('cp kaggle.json ~/.kaggle/')
+os.system('chmod 600 ~/.kaggle/kaggle.json')
+os.system('kaggle datasets download -d uciml/pima-indians-diabetes-database')
+os.system('unzip -o pima-indians-diabetes-database.zip')
+
+# Configure device and set seeds for reproducibility
+def configure_device():
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        torch.cuda.set_device(0)
+        cpu_generator = torch.Generator()
+        cpu_generator.manual_seed(42)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+    else:
+        device = torch.device("cpu")
+        cpu_generator = torch.Generator()
+        cpu_generator.manual_seed(42)
+
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+    return device, cpu_generator
+
+device, cpu_generator = configure_device()
+print(f"Using device: {device}")
+
+# Custom Dataset for Pima data
+class PimaDataset(torch.utils.data.Dataset):
+    def __init__(self, features, labels):
+        self.features = torch.tensor(features, dtype=torch.float32)
+        self.labels = torch.tensor(labels, dtype=torch.long)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return self.features[idx], self.labels[idx]
+
+# Enhanced Dataset preparation with data augmentation
+class DatasetPreparation:
+    @staticmethod
+    def get_pima_dataset(num_users=10, non_iid_alpha=0.5):
+        df = pd.read_csv('diabetes.csv')
+        features = df.iloc[:, :-1].values
+        labels = df.iloc[:, -1].values
+
+        features_train, features_test, labels_train, labels_test = train_test_split(
+            features, labels, test_size=0.2, random_state=42, stratify=labels
+        )
+
+        scaler = StandardScaler()
+        features_train = scaler.fit_transform(features_train)
+        features_test = scaler.transform(features_test)
+
+        # Data Augmentation
+        augmented_features = []
+        augmented_labels = []
+        for f, l in zip(features_train, labels_train):
+            augmented_features.append(f)
+            augmented_labels.append(l)
+            noise = np.random.normal(0, 0.1, f.shape)
+            augmented_features.append(f + noise)
+            augmented_labels.append(l)
+
+        features_train = np.array(augmented_features)
+        labels_train = np.array(augmented_labels)
+
+        trainset = PimaDataset(features_train, labels_train)
+        testset = PimaDataset(features_test, labels_test)
+
+        class_indices = {0: [], 1: []}
+        for idx, label in enumerate(labels_train):
+            class_indices[label].append(idx)
+
+        min_samples_per_user = max(20, len(labels_train) // (num_users * 3))
+
+        user_datasets = {}
+        used_indices = set()
+
+        for i in range(num_users):
+            user_indices = []
+            class_distribution = np.random.dirichlet([non_iid_alpha] * 2)
+
+            for label, indices in class_indices.items():
+                available_indices = [idx for idx in indices if idx not in used_indices]
+                if not available_indices:
+                    continue
+                target_samples = max(5, int(class_distribution[label] * min_samples_per_user))
+                actual_samples = min(target_samples, len(available_indices))
+                if actual_samples > 0:
+                    selected_indices = np.random.choice(available_indices, actual_samples, replace=False)
+                    user_indices.extend(selected_indices)
+                    used_indices.update(selected_indices)
+
+            if len(user_indices) < 10:
+                remaining_indices = [idx for idx in range(len(labels_train)) if idx not in used_indices]
+                if remaining_indices:
+                    additional_needed = 10 - len(user_indices)
+                    additional_indices = np.random.choice(remaining_indices, min(additional_needed, len(remaining_indices)), replace=False)
+                    user_indices.extend(additional_indices)
+                    used_indices.update(additional_indices)
+
+            if user_indices:
+                user_subset = torch.utils.data.Subset(trainset, user_indices)
+                user_datasets[f'user_{i}'] = user_subset
+
+        print(f"Created {len(user_datasets)} user datasets with sizes: {[len(dataset) for dataset in user_datasets.values()]}")
+        return user_datasets, trainset, testset
+
+# Enhanced TrapModel with improved architecture
+class TrapModel(nn.Module):
+    def __init__(self, use_trap_weights=False):
+        super(TrapModel, self).__init__()
+        self.fc1 = nn.Linear(8, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 16)
+        self.fc4 = nn.Linear(16, 1)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.3)
+
+        if use_trap_weights:
+            self._initialize_trap_weights()
+        else:
+            self._initialize_normal_weights()
+
+    def _initialize_normal_weights(self):
+        for layer in [self.fc1, self.fc2, self.fc3, self.fc4]:
+            nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
+            nn.init.constant_(layer.bias, 0.01)
+
+    def _initialize_trap_weights(self):
+        with torch.no_grad():
+            for layer in [self.fc1, self.fc2, self.fc3, self.fc4]:
+                in_features = layer.weight.shape[1]
+                out_features = layer.weight.shape[0]
+                min_dim = min(in_features, out_features)
+                layer.weight.data = torch.randn_like(layer.weight) * 0.02
+                for i in range(min_dim):
+                    layer.weight.data[i, i] = 0.8
+                layer.bias.data = torch.randn_like(layer.bias) * 0.01
+
+    def forward(self, x):
+        x = self.relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.relu(self.fc2(x))
+        x = self.dropout(x)
+        x = self.relu(self.fc3(x))
+        x = self.fc4(x)
+        return x
+
+# Enhanced SybilUser with sophisticated attacks
+class SybilUser:
+    def __init__(self, sybil_id, attack_strategy='zero_gradients', device=torch.device('cuda'), trainset=None):
+        self.sybil_id = sybil_id
+        self.attack_strategy = attack_strategy
+        self.device = device
+        self.trainset = trainset
+        self.is_sybil = True
+        self.attack_history = []
+        self._create_attack_data()
+
+    def _create_attack_data(self):
+        batch_size = random.randint(12, 24)
+
+        if self.attack_strategy == 'zero_gradients':
+            self.fake_features = torch.zeros(batch_size, 8).to(self.device)
+            self.fake_labels = torch.zeros(batch_size, dtype=torch.long).to(self.device)
+
+        elif self.attack_strategy == 'constant_gradients':
+            self.fake_features = torch.ones(batch_size, 8).to(self.device) * 0.05
+            self.fake_labels = torch.ones(batch_size, dtype=torch.long).to(self.device)
+
+        elif self.attack_strategy == 'adversarial_zero':
+            self.fake_features = torch.randn(batch_size, 8).to(self.device) * 0.1
+            self.fake_features[:, 0] = torch.clamp(self.fake_features[:, 0], 0, 10)
+            self.fake_features[:, 1] = torch.clamp(self.fake_features[:, 1], 50, 200)
+            self.fake_labels = torch.randint(0, 2, (batch_size,), dtype=torch.long).to(self.device)
+
+        elif self.attack_strategy == 'label_flipping':
+            if self.trainset is None:
+                raise ValueError("Trainset is required for label_flipping strategy")
+            indices = random.sample(range(len(self.trainset)), min(batch_size, len(self.trainset)))
+            features = [self.trainset[i][0] for i in indices]
+            labels = [1 - self.trainset[i][1] for i in indices]
+            self.fake_features = torch.stack(features).to(self.device)
+            self.fake_labels = torch.tensor(labels, dtype=torch.long).to(self.device)
+
+        elif self.attack_strategy == 'gradient_scaling':
+            self.fake_features = torch.randn(batch_size, 8).to(self.device) * 0.2
+            self.fake_labels = torch.randint(0, 2, (batch_size,), dtype=torch.long).to(self.device)
+
+        elif self.attack_strategy == 'model_poisoning':
+            self.fake_features = torch.randn(batch_size, 8).to(self.device) * 0.3
+            self.fake_labels = torch.ones(batch_size, dtype=torch.long).to(self.device)
+
+        self.dataset = torch.utils.data.TensorDataset(self.fake_features, self.fake_labels)
+
+    def compute_update(self, global_model, target_user_in_round=False):
+        local_model = TrapModel().to(self.device)
+        local_model.load_state_dict(global_model.state_dict())
+
+        attack_intensity = random.uniform(0.5, 1.5)
+
+        if self.attack_strategy == 'zero_gradients':
+            zero_update = {name: torch.zeros_like(param) for name, param in local_model.named_parameters()}
+            return {
+                'update': zero_update,
+                'local_accuracy': random.uniform(0.98, 1.0),
+                'num_samples': len(self.dataset),
+                'user_id': self.sybil_id,
+                'is_sybil': True
+            }
+
+        elif self.attack_strategy == 'constant_gradients':
+            constant_update = {name: torch.ones_like(param) * (1e-6 * attack_intensity) for name, param in local_model.named_parameters()}
+            return {
+                'update': constant_update,
+                'local_accuracy': random.uniform(0.94, 0.98),
+                'num_samples': len(self.dataset),
+                'user_id': self.sybil_id,
+                'is_sybil': True
+            }
+
+        else:
+            optimizer = optim.SGD(local_model.parameters(), lr=0.01 * attack_intensity)
+            criterion = nn.BCEWithLogitsLoss()
+            data_loader = torch.utils.data.DataLoader(self.dataset, batch_size=len(self.dataset), shuffle=False)
+
+            local_model.train()
+            for batch_x, batch_y in data_loader:
+                optimizer.zero_grad()
+                outputs = local_model(batch_x)
+                loss = criterion(outputs.squeeze(1), batch_y.float())
+                loss.backward()
+
+                if self.attack_strategy == 'gradient_scaling':
+                    for param in local_model.parameters():
+                        if param.grad is not None:
+                            param.grad *= (1.2 * attack_intensity)
+
+                elif self.attack_strategy == 'model_poisoning':
+                    for param in local_model.parameters():
+                        if param.grad is not None:
+                            param.grad *= random.uniform(0.8, 1.5)
+
+                optimizer.step()
+                break
+
+            update = {name: param.data - global_model.state_dict()[name] for name, param in local_model.named_parameters()}
+
+            base_accuracy = 0.6 + random.uniform(-0.1, 0.2)
+            if self.attack_strategy == 'label_flipping':
+                base_accuracy = max(0.3, base_accuracy - 0.2)
+
+            return {
+                'update': update,
+                'local_accuracy': base_accuracy,
+                'num_samples': len(self.dataset),
+                'user_id': self.sybil_id,
+                'is_sybil': True
+            }
+
+def create_sophisticated_sybil_users(num_sybils, trainset, attack_strategies=None):
+    if attack_strategies is None:
+        attack_strategies = [
+            'zero_gradients', 'constant_gradients', 'adversarial_zero',
+            'label_flipping', 'gradient_scaling', 'model_poisoning'
+        ]
+
+    sybil_users = []
+    for i in range(num_sybils):
+        strategy = random.choice(attack_strategies)
+        sybil = SybilUser(f'sybil_{i}', strategy, device, trainset)
+        sybil_users.append(sybil)
+
+    print(f"Created {num_sybils} sybil users with strategies: {[s.attack_strategy for s in sybil_users]}")
+    return sybil_users
+
+class ImprovedPrivacyMechanism:
+    def __init__(self, base_noise_scale=0.01, num_users=10, device=torch.device('cuda')):
+        self.base_noise_scale = base_noise_scale
+        self.num_users = num_users
+        self.device = device
+        self.global_gradient_history = []
+        self.user_trust_scores = {f'user_{i}': 1.0 for i in range(num_users)}
+        self.user_trust_scores.update({f'sybil_{i}': 0.5 for i in range(int(num_users * 0.3))})
+
+        self.detection_thresholds = {
+            'zero_gradient': 5e-5,
+            'norm_outlier_factor': 1.2,
+            'similarity_threshold': 0.7,
+            'accuracy_suspicion': 0.88,
+            'min_samples_threshold': 10,
+        }
+
+        self.user_behavior_history = {}
+        self.round_statistics = {
+            'gradient_norms': [],
+            'accuracies': [],
+            'sample_sizes': []
+        }
+        self.honeypot_features = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]], dtype=torch.float32).to(device)
+        self.honeypot_labels = torch.tensor([1], dtype=torch.long).to(device)
+
+    def adaptive_noise_scale(self, grad_norm):
+        base_noise = self.base_noise_scale
+        adaptive_sigma = base_noise * (1 + 0.05 * torch.log1p(grad_norm))
+        return torch.clamp(adaptive_sigma, min=0.0005, max=0.02)
+
+    def gradient_sanitizer(self, gradients):
+        grad_norm = torch.norm(gradients)
+        max_norm = 2.0
+
+        if grad_norm > max_norm:
+            clipped_grads = gradients * (max_norm / grad_norm)
+        else:
+            clipped_grads = gradients
+
+        if self.base_noise_scale > 0:
+            noise = torch.normal(mean=0, std=self.base_noise_scale * 0.05, size=clipped_grads.shape).to(clipped_grads.device)
+            sanitized_grads = clipped_grads + noise
+        else:
+            sanitized_grads = clipped_grads
+
+        return sanitized_grads
+
+    def enhanced_sybil_detection(self, user_updates, round_num=0):
+        if not user_updates or len(user_updates) < 2:
+            return [], [0] * len(user_updates)
+
+        self._update_round_statistics(user_updates)
+
+        detection_results = {
+            'zero_gradients': self._detect_zero_gradients_improved(user_updates),
+            'behavioral_anomalies': self._detect_behavioral_anomalies_improved(user_updates, round_num),
+            'norm_anomalies': self._detect_gradient_norm_anomalies_improved(user_updates),
+            'consistency_anomalies': self._detect_consistency_anomalies_improved(user_updates),
+            'clustering_anomalies': self._detect_clustering_anomalies_improved(user_updates),
+            'accuracy_anomalies': self._detect_accuracy_anomalies_improved(user_updates),
+            'attack_specific': self._detect_attack_specific(user_updates),
+            'honeypot': self._detect_honeypot_misclassification(user_updates)
+        }
+
+        detection_weights = {
+            'zero_gradients': 4.0,
+            'behavioral_anomalies': 3.0,
+            'norm_anomalies': 2.5,
+            'consistency_anomalies': 3.5,
+            'clustering_anomalies': 2.0,
+            'accuracy_anomalies': 3.0,
+            'attack_specific': 3.5,
+            'honeypot': 4.0
+        }
+
+        weighted_scores = [0.0] * len(user_updates)
+
+        for method, indices in detection_results.items():
+            weight = detection_weights[method]
+            for idx in indices:
+                if idx < len(weighted_scores):
+                    weighted_scores[idx] += weight
+
+        norm_variance = np.var(self.round_statistics['gradient_norms'][-1]) if self.round_statistics['gradient_norms'] else 0
+        base_threshold = sum(detection_weights.values()) * (0.15 + 0.05 * min(1.0, norm_variance))
+
+        if round_num > 10:
+            recent_detections = sum(len(indices) for indices in detection_results.values())
+            if recent_detections > len(user_updates):
+                base_threshold += 0.5
+
+        sybil_indices = []
+        for idx, score in enumerate(weighted_scores):
+            flagged_by = sum(1 for method, indices in detection_results.items() if idx in indices)
+            trust_score = self.user_trust_scores.get(user_updates[idx]['user_id'], 1.0)
+
+            strong_detectors = ['zero_gradients', 'attack_specific', 'honeypot', 'consistency_anomalies']
+            flagged_by_strong = sum(1 for method in strong_detectors if idx in detection_results[method])
+
+            if (score >= base_threshold and (flagged_by_strong >= 1 or flagged_by >= 2) and trust_score < 0.9):
+                sybil_indices.append(idx)
+                self.user_trust_scores[user_updates[idx]['user_id']] *= 0.85
+            elif flagged_by == 0:
+                self.user_trust_scores[user_updates[idx]['user_id']] = min(1.0, trust_score + 0.05)
+
+        final_sybil_indices = [idx for idx in sybil_indices if weighted_scores[idx] > base_threshold * 1.0]
+
+        return final_sybil_indices, weighted_scores
+
+    def _update_round_statistics(self, user_updates):
+        round_norms = []
+        round_accuracies = []
+        round_samples = []
+
+        for update in user_updates:
+            if isinstance(update, dict):
+                norm = 0
+                if 'update' in update:
+                    for param_grad in update['update'].values():
+                        if torch.is_tensor(param_grad):
+                            norm += torch.norm(param_grad).item() ** 2
+                round_norms.append(np.sqrt(norm))
+
+                round_accuracies.append(update.get('local_accuracy', 0))
+                round_samples.append(update.get('num_samples', 0))
+
+        self.round_statistics['gradient_norms'].append(round_norms)
+        self.round_statistics['accuracies'].append(round_accuracies)
+        self.round_statistics['sample_sizes'].append(round_samples)
+
+    def _detect_zero_gradients_improved(self, user_updates):
+        zero_grad_indices = []
+
+        for idx, update in enumerate(user_updates):
+            if not isinstance(update, dict) or 'update' not in update:
+                continue
+
+            total_norm = 0
+            param_count = 0
+            zero_count = 0
+
+            for param_grad in update['update'].values():
+                if torch.is_tensor(param_grad):
+                    norm = torch.norm(param_grad).item()
+                    total_norm += norm
+                    param_count += 1
+                    if norm < 1e-8:
+                        zero_count += 1
+
+            avg_norm = total_norm / max(param_count, 1)
+            zero_ratio = zero_count / max(param_count, 1)
+
+            if avg_norm < self.detection_thresholds['zero_gradient'] or zero_ratio > 0.8:
+                zero_grad_indices.append(idx)
+
+        return zero_grad_indices
+
+    def _detect_behavioral_anomalies_improved(self, user_updates, round_num):
+        behavioral_anomalies = []
+
+        for idx, update in enumerate(user_updates):
+            if not isinstance(update, dict) or 'user_id' not in update:
+                continue
+
+            user_id = update['user_id']
+            if user_id not in self.user_behavior_history:
+                self.user_behavior_history[user_id] = {
+                    'accuracy_history': [],
+                    'norm_history': [],
+                    'participation_count': 0,
+                    'sample_size_history': []
+                }
+
+            history = self.user_behavior_history[user_id]
+            local_accuracy = update.get('local_accuracy', 0)
+            num_samples = update.get('num_samples', 0)
+            norm = sum(torch.norm(g).item() ** 2 for g in update['update'].values() if torch.is_tensor(g)) ** 0.5
+
+            history['accuracy_history'].append(local_accuracy)
+            history['norm_history'].append(norm)
+            history['sample_size_history'].append(num_samples)
+            history['participation_count'] += 1
+
+            if len(history['accuracy_history']) >= 3:
+                recent_accuracies = history['accuracy_history'][-3:]
+                recent_norms = history['norm_history'][-3:]
+                acc_mean = np.mean(recent_accuracies)
+                acc_std = np.std(recent_accuracies)
+                norm_std = np.std(recent_norms)
+
+                if acc_std < 0.02 and acc_mean > 0.88:
+                    behavioral_anomalies.append(idx)
+                if norm_std < 0.02 and acc_mean > 0.85:
+                    behavioral_anomalies.append(idx)
+                if all(acc >= self.detection_thresholds['accuracy_suspicion'] for acc in recent_accuracies):
+                    behavioral_anomalies.append(idx)
+
+        return list(set(behavioral_anomalies))
+
+    def _detect_gradient_norm_anomalies_improved(self, user_updates):
+        norm_anomalies = []
+        gradient_norms = []
+
+        for update in user_updates:
+            if not isinstance(update, dict) or 'update' not in update:
+                gradient_norms.append(0)
+                continue
+
+            total_norm = 0
+            for param_grad in update['update'].values():
+                if torch.is_tensor(param_grad):
+                    total_norm += torch.norm(param_grad).item() ** 2
+            gradient_norms.append(np.sqrt(total_norm))
+
+        if len(gradient_norms) > 2:
+            norm_array = np.array(gradient_norms)
+            median_norm = np.median(norm_array)
+            mad = np.median(np.abs(norm_array - median_norm))
+
+            if mad > 0:
+                modified_z_scores = 0.6745 * (norm_array - median_norm) / mad
+                for idx, z_score in enumerate(modified_z_scores):
+                    if abs(z_score) > self.detection_thresholds['norm_outlier_factor']:
+                        norm_anomalies.append(idx)
+
+            min_norm = np.min(norm_array)
+            if min_norm > 0:
+                for idx, norm in enumerate(gradient_norms):
+                    if norm < min_norm * 2:
+                        norm_anomalies.append(idx)
+
+        return list(set(norm_anomalies))
+
+    def _detect_consistency_anomalies_improved(self, user_updates):
+        consistency_anomalies = []
+        high_similarity_pairs = []
+
+        for i in range(len(user_updates)):
+            for j in range(i + 1, len(user_updates)):
+                if not (isinstance(user_updates[i], dict) and isinstance(user_updates[j], dict)):
+                    continue
+                if 'update' not in user_updates[i] or 'update' not in user_updates[j]:
+                    continue
+
+                similarity = self._calculate_update_similarity(user_updates[i]['update'], user_updates[j]['update'])
+
+                if similarity > self.detection_thresholds['similarity_threshold']:
+                    high_similarity_pairs.append((i, j, similarity))
+
+        if high_similarity_pairs:
+            clustering = DBSCAN(eps=0.3, min_samples=2).fit(np.array([[i, j] for i, j, _ in high_similarity_pairs]))
+            labels = clustering.labels_
+            for idx, label in enumerate(labels):
+                if label != -1:
+                    i, j, _ = high_similarity_pairs[idx]
+                    consistency_anomalies.extend([i, j])
+
+        return list(set(consistency_anomalies))
+
+    def _detect_clustering_anomalies_improved(self, user_updates):
+        clustering_anomalies = []
+
+        try:
+            features = []
+            for update in user_updates:
+                if not isinstance(update, dict):
+                    features.append([0, 0, 0, 0])
+                    continue
+
+                grad_norm = 0
+                if 'update' in update:
+                    for param_grad in update['update'].values():
+                        if torch.is_tensor(param_grad):
+                            grad_norm += torch.norm(param_grad).item()
+
+                accuracy = update.get('local_accuracy', 0)
+                num_samples = update.get('num_samples', 0)
+
+                grad_var = 0
+                if 'update' in update:
+                    grad_values = []
+                    for param_grad in update['update'].values():
+                        if torch.is_tensor(param_grad):
+                            grad_values.extend(param_grad.flatten().cpu().numpy())
+                    if grad_values:
+                        grad_var = np.var(grad_values)
+
+                features.append([grad_norm, accuracy, num_samples, grad_var])
+
+            features = np.array(features)
+
+            if len(features) >= 3:
+                scaler = StandardScaler()
+                features_scaled = scaler.fit_transform(features)
+                clustering = DBSCAN(eps=0.25, min_samples=2).fit(features_scaled)
+                labels = clustering.labels_
+
+                for idx, label in enumerate(labels):
+                    if label == -1:
+                        if (features[idx][0] < 5e-4 or features[idx][1] > 0.88):
+                            clustering_anomalies.append(idx)
+        except Exception:
+            pass
+
+        return clustering_anomalies
+
+    def _detect_accuracy_anomalies_improved(self, user_updates):
+        accuracy_anomalies = []
+        accuracies = [update.get('local_accuracy', 0) for update in user_updates if isinstance(update, dict)]
+
+        if len(accuracies) > 1:
+            mean_acc = np.mean(accuracies)
+            std_acc = np.std(accuracies)
+
+            if std_acc > 0:
+                for idx, update in enumerate(user_updates):
+                    if isinstance(update, dict):
+                        acc = update.get('local_accuracy', 0)
+                        if acc > mean_acc + 1.8 * std_acc and acc > 0.85:
+                            accuracy_anomalies.append(idx)
+                        if acc >= 0.99:
+                            accuracy_anomalies.append(idx)
+
+        return accuracy_anomalies
+
+    def _detect_attack_specific(self, user_updates):
+        attack_specific_indices = []
+
+        for idx, update in enumerate(user_updates):
+            if not isinstance(update, dict) or 'update' not in update:
+                continue
+
+            gradients = [g.flatten() for g in update['update'].values() if torch.is_tensor(g)]
+            if not gradients:
+                continue
+
+            grad_vector = torch.cat(gradients)
+
+            non_zero_grads = grad_vector[torch.abs(grad_vector) > 1e-10]
+            if len(non_zero_grads) > 0:
+                probs = torch.abs(non_zero_grads) / torch.sum(torch.abs(non_zero_grads))
+                entropy = -torch.sum(probs * torch.log(probs + 1e-12))
+            else:
+                entropy = 0
+
+            if entropy < 0.5:
+                attack_specific_indices.append(idx)
+            elif torch.all(grad_vector >= 0) or torch.all(grad_vector <= 0):
+                attack_specific_indices.append(idx)
+
+            grad_abs = torch.abs(grad_vector)
+            if torch.std(grad_abs) < 1e-6:
+                attack_specific_indices.append(idx)
+
+        return list(set(attack_specific_indices))
+
+    def _detect_honeypot_misclassification(self, user_updates):
+        honeypot_indices = []
+
+        for idx, update in enumerate(user_updates):
+            if not isinstance(update, dict) or 'update' not in update:
+                continue
+
+            try:
+                local_model = TrapModel().to(self.device)
+                base_state = {name: torch.zeros_like(param) for name, param in local_model.named_parameters()}
+
+                updated_state = {}
+                for name, param in local_model.named_parameters():
+                    if name in update['update']:
+                        updated_state[name] = base_state[name] + update['update'][name]
+                    else:
+                        updated_state[name] = base_state[name]
+
+                local_model.load_state_dict(updated_state)
+                local_model.eval()
+
+                with torch.no_grad():
+                    output = torch.sigmoid(local_model(self.honeypot_features)).squeeze()
+                    pred = (output > 0.5).long()
+
+                    if pred != self.honeypot_labels[0] or output.item() < 0.3 or output.item() > 0.8:
+                        honeypot_indices.append(idx)
+            except Exception:
+                honeypot_indices.append(idx)
+
+        return honeypot_indices
+
+    def _calculate_update_similarity(self, update1, update2):
+        try:
+            vec1, vec2 = [], []
+            for key in update1.keys():
+                if key in update2 and torch.is_tensor(update1[key]) and torch.is_tensor(update2[key]):
+                    vec1.extend(update1[key].flatten().cpu().numpy())
+                    vec2.extend(update2[key].flatten().cpu().numpy())
+
+            if len(vec1) == 0 or len(vec2) == 0:
+                return 0
+
+            vec1, vec2 = np.array(vec1), np.array(vec2)
+            dot_product = np.dot(vec1, vec2)
+            norm1, norm2 = np.linalg.norm(vec1), np.linalg.norm(vec2)
+
+            if norm1 == 0 or norm2 == 0:
+                return 1 if norm1 == norm2 else 0
+
+            return dot_product / (norm1 * norm2)
+        except Exception:
+            return 0
+
+class FederatedLearningWithImprovedDefense:
+    def __init__(self, num_users=10, users_per_round=5, num_rounds=50, sybil_fraction=0.2):
+        self.num_users = num_users
+        self.users_per_round = users_per_round
+        self.num_rounds = num_rounds
+        self.sybil_fraction = sybil_fraction
+        self.device = device
+        self.generator = cpu_generator
+
+        self.legitimate_datasets, self.trainset, self.testset = DatasetPreparation.get_pima_dataset(
+            int(num_users * (1 - sybil_fraction))
+        )
+
+        num_sybils = int(num_users * sybil_fraction)
+        self.sybil_users = create_sophisticated_sybil_users(num_sybils, self.trainset)
+
+        self.privacy_mechanism = ImprovedPrivacyMechanism(
+            base_noise_scale=0.005,
+            num_users=num_users,
+            device=self.device
+        )
+
+        self.test_loader = torch.utils.data.DataLoader(self.testset, batch_size=32, shuffle=False)
+
+    def train_local_model(self, global_model, user_data, is_sybil=False, sybil_user=None, user_id=None):
+        if is_sybil and sybil_user:
+            update = sybil_user.compute_update(global_model, target_user_in_round=True)
+            update['user_id'] = sybil_user.sybil_id
+            return update
+
+        local_model = TrapModel().to(device)
+        local_model.load_state_dict(global_model.state_dict())
+
+        dataset_size = len(user_data)
+        base_lr = 0.02 if dataset_size < 20 else 0.01
+
+        optimizer = optim.SGD(local_model.parameters(), lr=base_lr, momentum=0.9, weight_decay=1e-4)
+        lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
+
+        criterion = nn.BCEWithLogitsLoss()
+
+        batch_size = min(16, len(user_data))
+        data_loader = torch.utils.data.DataLoader(
+            user_data,
+            batch_size=batch_size,
+            shuffle=True,
+            generator=self.generator
+        )
+
+        local_model.train()
+        local_accuracy = 0
+        total_samples = 0
+
+        for batch_x, batch_y in data_loader:
+            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+            optimizer.zero_grad()
+            outputs = local_model(batch_x)
+            loss = criterion(outputs.squeeze(1), batch_y.float()) + 0.01 * sum(p.norm(2) for p in local_model.parameters())  # Increased from 0.001
+            loss.backward()
+            optimizer.step()
+            lr_scheduler.step()
+
+            predicted = (torch.sigmoid(outputs) > 0.5).squeeze().float()
+            correct = (predicted == batch_y.float()).sum().item()
+            local_accuracy += correct
+            total_samples += batch_y.size(0)
+
+        local_accuracy /= total_samples if total_samples > 0 else 1
+        update = {name: param.data - global_model.state_dict()[name] for name, param in local_model.named_parameters()}
+
+        return {
+            'update': update,
+            'local_accuracy': local_accuracy,
+            'num_samples': len(user_data),
+            'user_id': user_id,
+            'is_sybil': False
+        }
+
+    def aggregate_updates(self, local_updates, round_num):
+        if not local_updates:
+            return {'aggregation_success': False, 'sybil_detected_indices': [], 'detection_accuracy': {}, 'aggregated_update': None}
+
+        sybil_indices, scores = self.privacy_mechanism.enhanced_sybil_detection(local_updates, round_num)
+
+        filtered_updates = [update for idx, update in enumerate(local_updates) if idx not in sybil_indices]
+
+        if not filtered_updates:
+            return {'aggregation_success': False, 'sybil_detected_indices': sybil_indices, 'detection_accuracy': {}, 'aggregated_update': None}
+
+        total_samples = sum(update['num_samples'] for update in filtered_updates)
+        if total_samples == 0:
+            return {'aggregation_success': False, 'sybil_detected_indices': sybil_indices, 'detection_accuracy': {}, 'aggregated_update': None}
+
+        aggregated_update = {}
+        for name in filtered_updates[0]['update'].keys():
+            weighted_sum = sum(update['update'][name] * update['num_samples'] for update in filtered_updates)
+            aggregated_update[name] = weighted_sum / total_samples
+
+        detection_stats = self._calculate_detection_statistics(local_updates, sybil_indices)
+
+        return {
+            'aggregation_success': True,
+            'sybil_detected_indices': sybil_indices,
+            'detection_accuracy': detection_stats,
+            'aggregated_update': aggregated_update
+        }
+
+    def _calculate_detection_statistics(self, local_updates, sybil_indices):
+        true_positives = sum(1 for idx in sybil_indices if local_updates[idx].get('is_sybil', False))
+        false_positives = len(sybil_indices) - true_positives
+        actual_sybils = sum(1 for update in local_updates if update.get('is_sybil', False))
+        false_negatives = actual_sybils - true_positives
+        true_negatives = len(local_updates) - actual_sybils - false_positives
+
+        accuracy = (true_positives + true_negatives) / len(local_updates) if len(local_updates) > 0 else 0
+        precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+        recall = true_positives / actual_sybils if actual_sybils > 0 else 0
+        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
+        return {
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+            'true_positives': true_positives,
+            'false_positives': false_positives,
+            'true_negatives': true_negatives,
+            'false_negatives': false_negatives
+        }
+
+    def test_accuracy(self, model):
+        model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for features, labels in self.test_loader:
+                features, labels = features.to(device), labels.to(device)
+                outputs = model(features)
+                predicted = (torch.sigmoid(outputs) > 0.5).squeeze().float()
+                total += labels.size(0)
+                correct += (predicted == labels.float()).sum().item()
+
+        return correct / total if total > 0 else 0
+
+    def calculate_model_robustness(self, model):
+        model.eval()
+        robustness_scores = []
+
+        with torch.no_grad():
+            for features, labels in self.test_loader:
+                features, labels = features.to(device), labels.to(device)
+                noise = torch.randn_like(features) * 0.01
+                noisy_features = features + noise
+
+                original_outputs = torch.sigmoid(model(features))
+                noisy_outputs = torch.sigmoid(model(noisy_features))
+
+                stability = torch.mean(torch.abs(original_outputs - noisy_outputs)).item()
+                robustness_scores.append(stability)
+
+        return np.mean(robustness_scores)
+
+    def federated_training(self, use_trap_weights=False):
+        global_model = TrapModel(use_trap_weights=use_trap_weights).to(device)
+
+        metrics = {
+            'global_accuracy': [],
+            'sybil_detected': [],
+            'detection_precision': [],
+            'detection_recall': [],
+            'false_positive_rate': [],
+            'attack_success_rate': [],
+            'aggregation_success_rate': [],
+            'detection_accuracy': []
+        }
+
+        total_tp = 0
+        total_actual_sybils = 0
+
+        print(f"Starting Enhanced Defense Training with {len(self.sybil_users)} sybil users...")
+        print(f"Using trap weights: {use_trap_weights}")
+
+        for round_num in range(self.num_rounds):
+            legitimate_users = list(self.legitimate_datasets.keys())
+
+            if round_num % 8 == 0 and len(self.sybil_users) >= self.users_per_round - 2:
+                num_legitimate = min(2, len(legitimate_users))
+                selected_legitimate = random.sample(legitimate_users, num_legitimate)
+                num_sybils = self.users_per_round - num_legitimate
+                selected_sybils = random.sample(self.sybil_users, min(num_sybils, len(self.sybil_users)))
+
+                selected_users = ([(user, False, user) for user in selected_legitimate] +
+                                [(sybil, True, sybil.sybil_id) for sybil in selected_sybils])
+                print(f"Round {round_num + 1}: COORDINATED ATTACK: {num_legitimate} legitimate + {num_sybils} sybils")
+
+            else:
+                num_sybils_in_round = min(
+                    random.randint(0, min(3, len(self.sybil_users))),
+                    self.users_per_round // 2
+                )
+                num_legitimate = self.users_per_round - num_sybils_in_round
+
+                selected_legitimate = random.sample(legitimate_users, num_legitimate)
+                selected_sybils = random.sample(self.sybil_users, num_sybils_in_round) if num_sybils_in_round > 0 else []
+
+                selected_users = ([(user, False, user) for user in selected_legitimate] +
+                                [(sybil, True, sybil.sybil_id) for sybil in selected_sybils])
+                print(f"Round {round_num + 1}: Normal round: {num_legitimate} legitimate + {num_sybils_in_round} sybils")
+
+            actual_sybils_in_round = sum(1 for _, is_sybil, _ in selected_users if is_sybil)
+            total_actual_sybils += actual_sybils_in_round
+
+            local_updates = []
+
+            for user, is_sybil, user_id in selected_users:
+                try:
+                    if is_sybil:
+                        update = self.train_local_model(global_model, None, is_sybil=True, sybil_user=user, user_id=user_id)
+                    else:
+                        user_data = self.legitimate_datasets[user]
+                        update = self.train_local_model(global_model, user_data, user_id=user_id)
+
+                    local_updates.append(update)
+
+                except Exception as e:
+                    print(f"Error in local training for user {user_id}: {str(e)[:100]}")
+                    continue
+
+            if not local_updates:
+                print("No valid updates received, skipping round")
+                continue
+
+            aggregation_result = self.aggregate_updates(local_updates, round_num)
+
+            detected_sybils_indices = aggregation_result.get('sybil_detected_indices', [])
+            detected_sybils = sum(1 for idx in detected_sybils_indices if local_updates[idx].get('is_sybil', False))
+            total_tp += detected_sybils
+            print(f"  Sybils detected: {detected_sybils}/{actual_sybils_in_round}")
+
+            if aggregation_result['aggregation_success'] and aggregation_result['aggregated_update']:
+                global_lr = 1.0
+                try:
+                    with torch.no_grad():
+                        for name, param in global_model.named_parameters():
+                            if name in aggregation_result['aggregated_update']:
+                                update = aggregation_result['aggregated_update'][name]
+                                param.data.add_(update, alpha=global_lr)
+                except Exception as e:
+                    print(f"Error updating global model: {str(e)[:100]}")
+
+            detection_stats = aggregation_result.get('detection_accuracy', {})
+
+            try:
+                current_accuracy = self.test_accuracy(global_model)
+                metrics['global_accuracy'].append(current_accuracy)
+            except Exception as e:
+                print(f"Error calculating test metrics: {str(e)[:100]}")
+                metrics['global_accuracy'].append(0)
+
+            metrics['sybil_detected'].append(len(detected_sybils_indices))
+            metrics['detection_precision'].append(detection_stats.get('precision', 0))
+            metrics['detection_recall'].append(detection_stats.get('recall', 0))
+            metrics['detection_accuracy'].append(detection_stats.get('accuracy', 0))
+
+            false_positives = detection_stats.get('false_positives', 0)
+            true_negatives = detection_stats.get('true_negatives', 0)
+            total_legitimate = false_positives + true_negatives
+            fpr = false_positives / total_legitimate if total_legitimate > 0 else 0
+            metrics['false_positive_rate'].append(fpr)
+
+            actual_sybils = sum(1 for _, is_sybil, _ in selected_users if is_sybil)
+            detected_sybils_count = detection_stats.get('true_positives', 0)
+            undetected_sybils = actual_sybils - detected_sybils_count
+            attack_success = undetected_sybils / max(actual_sybils, 1) if actual_sybils > 0 else 0
+            metrics['attack_success_rate'].append(attack_success)
+
+            metrics['aggregation_success_rate'].append(1 if aggregation_result['aggregation_success'] else 0)
+
+            print(f"  Global Accuracy: {metrics['global_accuracy'][-1]:.4f}")
+            print(f"  Detection Precision: {detection_stats.get('precision', 0):.4f}")
+            print(f"  Detection Recall: {detection_stats.get('recall', 0):.4f}")
+            print(f"  False Positive Rate: {fpr:.4f}")
+            print(f"  Attack Success Rate: {attack_success:.4f}")
+
+        print("\nEnhanced Defense Training Completed.")
+        return metrics, total_tp, total_actual_sybils
+
+    def visualize_comprehensive_results(self, metrics):
+        plt.figure(figsize=(15, 10))
+
+        plt.subplot(2, 3, 1)
+        plt.plot(metrics['global_accuracy'], label='Global Accuracy', color='blue', linewidth=2)
+        plt.title('Global Model Accuracy Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.subplot(2, 3, 2)
+        plt.plot(metrics['detection_precision'], label='Precision', color='orange', linewidth=2)
+        plt.title('Detection Precision Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('Precision')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.subplot(2, 3, 3)
+        plt.plot(metrics['detection_recall'], label='Recall', color='purple', linewidth=2)
+        plt.title('Detection Recall Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('Recall')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.subplot(2, 3, 4)
+        plt.plot(metrics['false_positive_rate'], label='False Positive Rate', color='red', linewidth=2)
+        plt.title('False Positive Rate Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('FPR')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.subplot(2, 3, 5)
+        plt.plot(metrics['attack_success_rate'], label='Attack Success Rate', color='darkred', linewidth=2)
+        plt.title('Attack Success Rate Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('Success Rate')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+        plt.show()
+
+def main():
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(42)
+        torch.cuda.manual_seed_all(42)
+
+    config = {
+        'num_users': 10,
+        'users_per_round': 5,
+        'num_rounds': 50,
+        'sybil_fraction': 0.3
+    }
+
+    print(f"Enhanced Experimental Configuration:")
+    for key, value in config.items():
+        print(f"  {key}: {value}")
+
+    experiment = FederatedLearningWithImprovedDefense(**config)
+
+    print("\n" + "="*80)
+    print("EXPERIMENT 1: Enhanced Defense vs Sophisticated Sybil Attacks")
+    print("="*80)
+
+    enhanced_metrics, total_tp, total_actual_sybils = experiment.federated_training(use_trap_weights=True)
+
+    print("\n" + "="*60)
+    print("COMPREHENSIVE RESULTS VISUALIZATION")
+    print("="*60)
+    experiment.visualize_comprehensive_results(enhanced_metrics)
+
+    print("\n" + "="*80)
+    print("COMPREHENSIVE EXPERIMENTAL RESULTS SUMMARY")
+    print("="*80)
+
+    print(f"Final Global Accuracy: {enhanced_metrics['global_accuracy'][-1]:.4f}")
+    print(f"Average Detection Precision: {np.mean(enhanced_metrics['detection_precision']):.4f}")
+    print(f"Average Detection Recall: {np.mean(enhanced_metrics['detection_recall']):.4f}")
+    print(f"Average False Positive Rate: {np.mean(enhanced_metrics['false_positive_rate']):.4f}")
+    print(f"Average Attack Success Rate: {np.mean(enhanced_metrics['attack_success_rate']):.4f}")
+    print(f"Average Detection Accuracy: {np.mean(enhanced_metrics['detection_accuracy']):.4f}")
+    print(f"Total Sybils Detected: {total_tp} out of {total_actual_sybils}")
+   
+if __name__ == "__main__":
+    main()

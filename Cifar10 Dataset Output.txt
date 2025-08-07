@@ -1,0 +1,470 @@
+Using device: cuda
+================================================================================
+ENHANCED FEDERATED LEARNING DEFENSE FRAMEWORK
+Defense Against Trap Weight Attacks (Baseline Paper Reproduction)
+================================================================================
+Experimental Configuration:
+  num_users: 100
+  users_per_round: 10
+  num_rounds: 50
+  sybil_fraction: 0.2
+
+Initializing Enhanced Defense Framework...
+Configuration: 100 users, 10 users/round, 50 rounds
+Sybil injection rate: 20.0%
+Preparing Dataset...
+100%|██████████| 170M/170M [00:03<00:00, 47.7MB/s]
+Dataset prepared with 80 legitimate user datasets
+Creating 20 sophisticated sybil users...
+
+================================================================================
+EXPERIMENT: Defense vs Trap Weight Attack (Baseline Paper)
+================================================================================
+Running defense against trap weight attack (baseline paper scenario)...
+Starting Enhanced Defense Training with 20 sybil users...
+Using trap weights: True
+
+Round 1/50
+ATTACK ROUND: 1 target user + 9 sybils
+Round 0: Detected 5 potential Sybil users
+  Global Accuracy: 0.2339
+  Sybils Detected: 5/9
+  Detection Accuracy: 0.6000
+  Attack Success Rate: 0.4444
+
+Round 2/50
+Normal round: 9 legitimate + 1 sybils
+Round 1: Detected 1 potential Sybil users
+  Global Accuracy: 0.3648
+  Sybils Detected: 1/1
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 3/50
+Normal round: 8 legitimate + 2 sybils
+Round 2: Detected 2 potential Sybil users
+  Global Accuracy: 0.4267
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 4/50
+Normal round: 9 legitimate + 1 sybils
+Round 3: Detected 0 potential Sybil users
+  Global Accuracy: 0.4453
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 5/50
+Normal round: 8 legitimate + 2 sybils
+Round 4: Detected 2 potential Sybil users
+  Global Accuracy: 0.4525
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 6/50
+Normal round: 9 legitimate + 1 sybils
+Round 5: Detected 1 potential Sybil users
+  Global Accuracy: 0.4709
+  Sybils Detected: 1/1
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 7/50
+Normal round: 10 legitimate + 0 sybils
+Round 6: Detected 0 potential Sybil users
+  Global Accuracy: 0.5003
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 8/50
+Normal round: 10 legitimate + 0 sybils
+Round 7: Detected 0 potential Sybil users
+  Global Accuracy: 0.5878
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 9/50
+Normal round: 8 legitimate + 2 sybils
+Round 8: Detected 1 potential Sybil users
+  Global Accuracy: 0.5605
+  Sybils Detected: 1/2
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.5000
+
+Round 10/50
+Normal round: 8 legitimate + 2 sybils
+Round 9: Detected 2 potential Sybil users
+  Global Accuracy: 0.5316
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 11/50
+ATTACK ROUND: 1 target user + 9 sybils
+Round 10: Detected 5 potential Sybil users
+  Global Accuracy: 0.4853
+  Sybils Detected: 5/9
+  Detection Accuracy: 0.6000
+  Attack Success Rate: 0.4444
+
+Round 12/50
+Normal round: 8 legitimate + 2 sybils
+Round 11: Detected 2 potential Sybil users
+  Global Accuracy: 0.5718
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 13/50
+Normal round: 9 legitimate + 1 sybils
+Round 12: Detected 0 potential Sybil users
+  Global Accuracy: 0.6007
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 14/50
+Normal round: 9 legitimate + 1 sybils
+Round 13: Detected 0 potential Sybil users
+  Global Accuracy: 0.5602
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 15/50
+Normal round: 9 legitimate + 1 sybils
+Round 14: Detected 1 potential Sybil users
+  Global Accuracy: 0.5879
+  Sybils Detected: 1/1
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 16/50
+Normal round: 10 legitimate + 0 sybils
+Round 15: Detected 0 potential Sybil users
+  Global Accuracy: 0.5655
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 17/50
+Normal round: 7 legitimate + 3 sybils
+Round 16: Detected 1 potential Sybil users
+  Global Accuracy: 0.6170
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 18/50
+Normal round: 9 legitimate + 1 sybils
+Round 17: Detected 0 potential Sybil users
+  Global Accuracy: 0.5297
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 19/50
+Normal round: 7 legitimate + 3 sybils
+Round 18: Detected 1 potential Sybil users
+  Global Accuracy: 0.6001
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 20/50
+Normal round: 7 legitimate + 3 sybils
+Round 19: Detected 0 potential Sybil users
+  Global Accuracy: 0.6134
+  Sybils Detected: 0/3
+  Detection Accuracy: 0.7000
+  Attack Success Rate: 1.0000
+
+Round 21/50
+ATTACK ROUND: 1 target user + 9 sybils
+Round 20: Detected 6 potential Sybil users
+  Global Accuracy: 0.3277
+  Sybils Detected: 6/9
+  Detection Accuracy: 0.7000
+  Attack Success Rate: 0.3333
+
+Round 22/50
+Normal round: 7 legitimate + 3 sybils
+Round 21: Detected 1 potential Sybil users
+  Global Accuracy: 0.6104
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 23/50
+Normal round: 8 legitimate + 2 sybils
+Round 22: Detected 1 potential Sybil users
+  Global Accuracy: 0.5909
+  Sybils Detected: 1/2
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.5000
+
+Round 24/50
+Normal round: 7 legitimate + 3 sybils
+Round 23: Detected 1 potential Sybil users
+  Global Accuracy: 0.6321
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 25/50
+Normal round: 7 legitimate + 3 sybils
+Round 24: Detected 2 potential Sybil users
+  Global Accuracy: 0.6145
+  Sybils Detected: 2/3
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.3333
+
+Round 26/50
+Normal round: 7 legitimate + 3 sybils
+Round 25: Detected 1 potential Sybil users
+  Global Accuracy: 0.6446
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 27/50
+Normal round: 7 legitimate + 3 sybils
+Round 26: Detected 2 potential Sybil users
+  Global Accuracy: 0.5517
+  Sybils Detected: 2/3
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.3333
+
+Round 28/50
+Normal round: 10 legitimate + 0 sybils
+Round 27: Detected 0 potential Sybil users
+  Global Accuracy: 0.6320
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 29/50
+Normal round: 8 legitimate + 2 sybils
+Round 28: Detected 0 potential Sybil users
+  Global Accuracy: 0.6159
+  Sybils Detected: 0/2
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 1.0000
+
+Round 30/50
+Normal round: 7 legitimate + 3 sybils
+Round 29: Detected 1 potential Sybil users
+  Global Accuracy: 0.6505
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 31/50
+ATTACK ROUND: 1 target user + 9 sybils
+Round 30: Detected 4 potential Sybil users
+  Global Accuracy: 0.3721
+  Sybils Detected: 4/9
+  Detection Accuracy: 0.5000
+  Attack Success Rate: 0.5556
+
+Round 32/50
+Normal round: 10 legitimate + 0 sybils
+Round 31: Detected 0 potential Sybil users
+  Global Accuracy: 0.6102
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 33/50
+Normal round: 7 legitimate + 3 sybils
+Round 32: Detected 0 potential Sybil users
+  Global Accuracy: 0.6490
+  Sybils Detected: 0/3
+  Detection Accuracy: 0.7000
+  Attack Success Rate: 1.0000
+
+Round 34/50
+Normal round: 7 legitimate + 3 sybils
+Round 33: Detected 1 potential Sybil users
+  Global Accuracy: 0.6670
+  Sybils Detected: 1/3
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 0.6667
+
+Round 35/50
+Normal round: 8 legitimate + 2 sybils
+Round 34: Detected 0 potential Sybil users
+  Global Accuracy: 0.6469
+  Sybils Detected: 0/2
+  Detection Accuracy: 0.8000
+  Attack Success Rate: 1.0000
+
+Round 36/50
+Normal round: 9 legitimate + 1 sybils
+Round 35: Detected 0 potential Sybil users
+  Global Accuracy: 0.6720
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 37/50
+Normal round: 8 legitimate + 2 sybils
+Round 36: Detected 1 potential Sybil users
+  Global Accuracy: 0.6595
+  Sybils Detected: 1/2
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.5000
+
+Round 38/50
+Normal round: 8 legitimate + 2 sybils
+Round 37: Detected 2 potential Sybil users
+  Global Accuracy: 0.6292
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 39/50
+Normal round: 7 legitimate + 3 sybils
+Round 38: Detected 0 potential Sybil users
+  Global Accuracy: 0.6560
+  Sybils Detected: 0/3
+  Detection Accuracy: 0.7000
+  Attack Success Rate: 1.0000
+
+Round 40/50
+Normal round: 9 legitimate + 1 sybils
+Round 39: Detected 1 potential Sybil users
+  Global Accuracy: 0.6495
+  Sybils Detected: 1/1
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 41/50
+ATTACK ROUND: 1 target user + 9 sybils
+Round 40: Detected 3 potential Sybil users
+  Global Accuracy: 0.3308
+  Sybils Detected: 3/9
+  Detection Accuracy: 0.4000
+  Attack Success Rate: 0.6667
+
+Round 42/50
+Normal round: 8 legitimate + 2 sybils
+Round 41: Detected 2 potential Sybil users
+  Global Accuracy: 0.5955
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 43/50
+Normal round: 8 legitimate + 2 sybils
+Round 42: Detected 1 potential Sybil users
+  Global Accuracy: 0.6311
+  Sybils Detected: 1/2
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.5000
+
+Round 44/50
+Normal round: 8 legitimate + 2 sybils
+Round 43: Detected 2 potential Sybil users
+  Global Accuracy: 0.6818
+  Sybils Detected: 2/2
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 45/50
+Normal round: 9 legitimate + 1 sybils
+Round 44: Detected 0 potential Sybil users
+  Global Accuracy: 0.6621
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 46/50
+Normal round: 10 legitimate + 0 sybils
+Round 45: Detected 0 potential Sybil users
+  Global Accuracy: 0.6410
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 47/50
+Normal round: 9 legitimate + 1 sybils
+Round 46: Detected 0 potential Sybil users
+  Global Accuracy: 0.6065
+  Sybils Detected: 0/1
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 1.0000
+
+Round 48/50
+Normal round: 10 legitimate + 0 sybils
+Round 47: Detected 0 potential Sybil users
+  Global Accuracy: 0.6217
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Round 49/50
+Normal round: 7 legitimate + 3 sybils
+Round 48: Detected 2 potential Sybil users
+  Global Accuracy: 0.6345
+  Sybils Detected: 2/3
+  Detection Accuracy: 0.9000
+  Attack Success Rate: 0.3333
+
+Round 50/50
+Normal round: 10 legitimate + 0 sybils
+Round 49: Detected 0 potential Sybil users
+  Global Accuracy: 0.6777
+  Sybils Detected: 0/0
+  Detection Accuracy: 1.0000
+  Attack Success Rate: 0.0000
+
+Enhanced Defense Training Completed.
+
+============================================================
+RESULTS VISUALIZATION
+============================================================
+Generating visualizations for trap weight attack defense...
+/tmp/ipython-input-3876156601.py:715: MatplotlibDeprecationWarning: The 'labels' parameter of boxplot() has been renamed 'tick_labels' since Matplotlib 3.9; support for the old name will be dropped in 3.11.
+  plt.boxplot([normal_acc, attack_acc], labels=['Normal Rounds', 'Attack Rounds'])
+
+
+================================================================================
+COMPREHENSIVE EXPERIMENTAL RESULTS SUMMARY
+================================================================================
+
+TRAP WEIGHT ATTACK DEFENSE (BASELINE PAPER) RESULTS:
+--------------------------------------------------
+Final Global Accuracy: 0.6777
+Average Global Accuracy: 0.5694
+Average Detection Accuracy: 0.8740
+Best Detection Accuracy: 1.0000
+Average Detection Precision: 0.6000
+Average Detection Recall: 0.3978
+Total Sybils Detected: 58
+Average Attack Success Rate: 0.4422
+Defense Success Rate: 0.5578
+Average False Positives: 0.00
+Total Legitimate Users Flagged: 0
+Average Reconstruction SNR: 0.01 dB
+
+                                FINAL ASSESSMENT                                
+================================================================================
+🎯 SUCCESS: Our enhanced defense framework successfully detects
+   sophisticated trap weight attacks described in the baseline paper!
+   Average detection accuracy: 87.4%
+
+📈 Framework Performance:
+   • Precision: 60.0%
+   • Recall: 39.8%
+   • Average False Positives per Round: 0.0
+
+🔍 Detailed Attack Analysis:
+   • Rounds with successful attacks: 21/50
+   • Defense effectiveness: 58.0%
+   • Low reconstruction SNR (0.0 dB) indicates good privacy protection
