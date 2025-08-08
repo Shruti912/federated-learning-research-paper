@@ -1,6 +1,6 @@
-kaggle.json(application/json) - 68 bytes, last modified: 8/8/2025 - 100% done
-Saving kaggle.json to kaggle (8).json
-Using device: cuda
+kaggle.json(application/json) - 69 bytes, last modified: 08/08/2025 - 100% done
+Saving kaggle.json to kaggle.json
+Using device: cpu
 Enhanced Experimental Configuration:
   num_users: 10
   users_per_round: 5
@@ -15,47 +15,60 @@ EXPERIMENT 1: Enhanced Defense vs Sophisticated Sybil Attacks
 Starting Enhanced Defense Training with 3 sybil users...
 Using trap weights: True
 Round 1: COORDINATED ATTACK: 2 legitimate + 3 sybils
-  Sybils detected: 2/3
-  Global Accuracy: 0.3701
+  Sybils detected: 1/3
+  Global Accuracy: 0.3636
   Detection Precision: 1.0000
-  Detection Recall: 0.6667
+  Detection Recall: 0.3333
   False Positive Rate: 0.0000
-  Attack Success Rate: 0.3333
+  Attack Success Rate: 0.6667
+  Defense Success Rate: 0.3333
+  Defense Effectiveness: 1.0000
 Round 2: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.3961
+  Global Accuracy: 0.3636
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 3: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5325
+  Global Accuracy: 0.5195
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 4: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.5325
+  Global Accuracy: 0.5195
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 5: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.4351
+  Baseline accuracy established: 0.4351
+  Global Accuracy: 0.4091
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 0.9403
 Round 6: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5000
+  Global Accuracy: 0.5065
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 7: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
   Global Accuracy: 0.3701
@@ -63,6 +76,8 @@ Round 7: Normal round: 5 legitimate + 0 sybils
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 0.8507
 Round 8: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
   Global Accuracy: 0.3766
@@ -70,27 +85,35 @@ Round 8: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 0.8657
 Round 9: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Sybils detected: 2/3
-  Global Accuracy: 0.5325
+  Global Accuracy: 0.5195
   Detection Precision: 1.0000
   Detection Recall: 0.6667
   False Positive Rate: 0.0000
   Attack Success Rate: 0.3333
+  Defense Success Rate: 0.6667
+  Defense Effectiveness: 1.0000
 Round 10: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5390
+  Global Accuracy: 0.5325
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 11: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
-  Global Accuracy: 0.5260
+  Global Accuracy: 0.5195
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 12: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
   Global Accuracy: 0.5519
@@ -98,6 +121,8 @@ Round 12: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 13: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 0/1
   Global Accuracy: 0.5390
@@ -105,6 +130,8 @@ Round 13: Normal round: 4 legitimate + 1 sybils
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 1.0000
+  Defense Success Rate: 0.0000
+  Defense Effectiveness: 1.0000
 Round 14: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
   Global Accuracy: 0.5390
@@ -112,6 +139,8 @@ Round 14: Normal round: 5 legitimate + 0 sybils
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 15: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 1/1
   Global Accuracy: 0.5390
@@ -119,20 +148,26 @@ Round 15: Normal round: 4 legitimate + 1 sybils
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 16: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.5390
+  Global Accuracy: 0.5455
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 17: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Sybils detected: 2/3
-  Global Accuracy: 0.5325
+  Global Accuracy: 0.5390
   Detection Precision: 1.0000
   Detection Recall: 0.6667
   False Positive Rate: 0.0000
   Attack Success Rate: 0.3333
+  Defense Success Rate: 0.6667
+  Defense Effectiveness: 1.0000
 Round 18: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
   Global Accuracy: 0.5390
@@ -140,41 +175,53 @@ Round 18: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 19: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 1/1
-  Global Accuracy: 0.5584
+  Global Accuracy: 0.5714
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 20: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
-  Global Accuracy: 0.5195
+  Global Accuracy: 0.5390
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 21: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
-  Global Accuracy: 0.5519
+  Global Accuracy: 0.5649
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 22: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.5584
+  Global Accuracy: 0.5649
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 23: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5974
+  Global Accuracy: 0.5909
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 24: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
   Global Accuracy: 0.5844
@@ -182,6 +229,8 @@ Round 24: Normal round: 5 legitimate + 0 sybils
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 25: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Sybils detected: 2/3
   Global Accuracy: 0.5909
@@ -189,27 +238,35 @@ Round 25: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Detection Recall: 0.6667
   False Positive Rate: 0.0000
   Attack Success Rate: 0.3333
+  Defense Success Rate: 0.6667
+  Defense Effectiveness: 1.0000
 Round 26: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5584
+  Global Accuracy: 0.5649
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 27: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.5909
+  Global Accuracy: 0.5844
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 28: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 0/1
-  Global Accuracy: 0.6364
+  Global Accuracy: 0.6169
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 1.0000
+  Defense Success Rate: 0.0000
+  Defense Effectiveness: 1.0000
 Round 29: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
   Global Accuracy: 0.6364
@@ -217,34 +274,44 @@ Round 29: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 30: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
-  Global Accuracy: 0.6364
+  Global Accuracy: 0.6104
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 31: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.6429
+  Global Accuracy: 0.6299
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 32: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.6429
+  Global Accuracy: 0.6234
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 33: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Sybils detected: 2/3
-  Global Accuracy: 0.5714
+  Global Accuracy: 0.5649
   Detection Precision: 1.0000
   Detection Recall: 0.6667
   False Positive Rate: 0.0000
   Attack Success Rate: 0.3333
+  Defense Success Rate: 0.6667
+  Defense Effectiveness: 1.0000
 Round 34: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
   Global Accuracy: 0.5714
@@ -252,27 +319,35 @@ Round 34: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 35: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
-  Global Accuracy: 0.5779
+  Global Accuracy: 0.5844
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 36: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5779
+  Global Accuracy: 0.5714
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 37: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 1/1
-  Global Accuracy: 0.5909
+  Global Accuracy: 0.5974
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 38: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
   Global Accuracy: 0.5844
@@ -280,27 +355,35 @@ Round 38: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 39: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 1/1
-  Global Accuracy: 0.6234
+  Global Accuracy: 0.6104
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 40: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 2/2
-  Global Accuracy: 0.5844
+  Global Accuracy: 0.5974
   Detection Precision: 1.0000
   Detection Recall: 1.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 41: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Sybils detected: 2/3
-  Global Accuracy: 0.5779
+  Global Accuracy: 0.5909
   Detection Precision: 1.0000
   Detection Recall: 0.6667
   False Positive Rate: 0.0000
   Attack Success Rate: 0.3333
+  Defense Success Rate: 0.6667
+  Defense Effectiveness: 1.0000
 Round 42: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
   Global Accuracy: 0.5844
@@ -308,13 +391,17 @@ Round 42: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 43: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.5714
+  Global Accuracy: 0.5519
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 44: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
   Global Accuracy: 0.5844
@@ -322,13 +409,17 @@ Round 44: Normal round: 5 legitimate + 0 sybils
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 45: Normal round: 4 legitimate + 1 sybils
   Sybils detected: 0/1
-  Global Accuracy: 0.5844
+  Global Accuracy: 0.5974
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 1.0000
+  Defense Success Rate: 0.0000
+  Defense Effectiveness: 1.0000
 Round 46: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
   Global Accuracy: 0.6234
@@ -336,6 +427,8 @@ Round 46: Normal round: 3 legitimate + 2 sybils
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 Round 47: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
   Global Accuracy: 0.6234
@@ -343,13 +436,17 @@ Round 47: Normal round: 5 legitimate + 0 sybils
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 48: Normal round: 5 legitimate + 0 sybils
   Sybils detected: 0/0
-  Global Accuracy: 0.6104
+  Global Accuracy: 0.6234
   Detection Precision: 0.0000
   Detection Recall: 0.0000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.0000
+  Defense Success Rate: 1.0000
+  Defense Effectiveness: 1.0000
 Round 49: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Sybils detected: 2/3
   Global Accuracy: 0.6429
@@ -357,28 +454,39 @@ Round 49: COORDINATED ATTACK: 2 legitimate + 3 sybils
   Detection Recall: 0.6667
   False Positive Rate: 0.0000
   Attack Success Rate: 0.3333
+  Defense Success Rate: 0.6667
+  Defense Effectiveness: 1.0000
 Round 50: Normal round: 3 legitimate + 2 sybils
   Sybils detected: 1/2
-  Global Accuracy: 0.6364
+  Global Accuracy: 0.6429
   Detection Precision: 1.0000
   Detection Recall: 0.5000
   False Positive Rate: 0.0000
   Attack Success Rate: 0.5000
+  Defense Success Rate: 0.5000
+  Defense Effectiveness: 1.0000
 
 Enhanced Defense Training Completed.
-
-============================================================
-COMPREHENSIVE RESULTS VISUALIZATION
-============================================================
-
 
 ================================================================================
 COMPREHENSIVE EXPERIMENTAL RESULTS SUMMARY
 ================================================================================
-Final Global Accuracy: 0.6364
+Final Global Accuracy: 0.6429
 Average Detection Precision: 0.7000
-Average Detection Recall: 0.5033
+Average Detection Recall: 0.4967
 Average False Positive Rate: 0.0000
-Average Attack Success Rate: 0.2567
-Average Detection Accuracy: 0.9000
-Total Sybils Detected: 51 out of 76
+Average Attack Success Rate: 0.2633
+Average Detection Accuracy: 0.8960
+Average Defense Success Rate: 0.7367
+Average Defense Effectiveness: 0.9931
+Total Sybils Detected: 50 out of 76
+
+============================================================
+DEFENSE METRICS ANALYSIS
+============================================================
+Final Defense Success Rate: 0.5000 (50.0%)
+Final Defense Effectiveness: 1.0000 (100.0%)
+
+Trend Analysis:
+  Defense Success Rate: Early=0.6500, Late=0.6333, Change=-0.0167
+  Defense Effectiveness: Early=0.9657, Late=1.0000, Change=+0.0343
