@@ -729,6 +729,10 @@ class FederatedLearningWithImprovedDefense:
         )
 
         self.test_loader = torch.utils.data.DataLoader(self.testset, batch_size=32, shuffle=False)
+        
+        # Initialize baseline accuracy for defense effectiveness calculation
+        self.baseline_accuracy = None
+        self.initial_rounds_for_baseline = 5
 
     def train_local_model(self, global_model, user_data, is_sybil=False, sybil_user=None, user_id=None):
         if is_sybil and sybil_user:
@@ -869,6 +873,30 @@ class FederatedLearningWithImprovedDefense:
 
         return np.mean(robustness_scores)
 
+    def calculate_defense_success_rate(self, sybils_detected, total_sybils):
+        """
+        Calculate Defense Success Rate: percentage of sybils successfully detected
+        """
+        if total_sybils == 0:
+            return 1.0  # Perfect success if no sybils present
+        return sybils_detected / total_sybils
+
+    def calculate_defense_effectiveness(self, current_accuracy, baseline_accuracy=None):
+        """
+        Calculate Defense Effectiveness: how well the defense maintains model accuracy
+        compared to baseline (without attacks) or initial performance
+        """
+        if baseline_accuracy is None:
+            baseline_accuracy = self.baseline_accuracy
+        
+        if baseline_accuracy is None or baseline_accuracy == 0:
+            return 1.0  # Default to perfect effectiveness if no baseline
+        
+        # Effectiveness is the ratio of current accuracy to baseline accuracy
+        # Capped at 1.0 to avoid values > 100%
+        effectiveness = min(current_accuracy / baseline_accuracy, 1.0)
+        return max(effectiveness, 0.0)  # Ensure non-negative
+
     def federated_training(self, use_trap_weights=False):
         global_model = TrapModel(use_trap_weights=use_trap_weights).to(device)
 
@@ -880,11 +908,14 @@ class FederatedLearningWithImprovedDefense:
             'false_positive_rate': [],
             'attack_success_rate': [],
             'aggregation_success_rate': [],
-            'detection_accuracy': []
+            'detection_accuracy': [],
+            'defense_success_rate': [],  # NEW METRIC
+            'defense_effectiveness': []   # NEW METRIC
         }
 
         total_tp = 0
         total_actual_sybils = 0
+        baseline_accuracies = []  # Store early accuracies for baseline calculation
 
         print(f"Starting Enhanced Defense Training with {len(self.sybil_users)} sybil users...")
         print(f"Using trap weights: {use_trap_weights}")
@@ -962,9 +993,20 @@ class FederatedLearningWithImprovedDefense:
             try:
                 current_accuracy = self.test_accuracy(global_model)
                 metrics['global_accuracy'].append(current_accuracy)
+                
+                # Store baseline accuracy from initial rounds (before major attacks)
+                if round_num < self.initial_rounds_for_baseline:
+                    baseline_accuracies.append(current_accuracy)
+                
+                # Set baseline accuracy after initial rounds
+                if round_num == self.initial_rounds_for_baseline - 1 and baseline_accuracies:
+                    self.baseline_accuracy = np.mean(baseline_accuracies)
+                    print(f"  Baseline accuracy established: {self.baseline_accuracy:.4f}")
+                    
             except Exception as e:
                 print(f"Error calculating test metrics: {str(e)[:100]}")
                 metrics['global_accuracy'].append(0)
+                current_accuracy = 0
 
             metrics['sybil_detected'].append(len(detected_sybils_indices))
             metrics['detection_precision'].append(detection_stats.get('precision', 0))
@@ -985,19 +1027,28 @@ class FederatedLearningWithImprovedDefense:
 
             metrics['aggregation_success_rate'].append(1 if aggregation_result['aggregation_success'] else 0)
 
-            print(f"  Global Accuracy: {metrics['global_accuracy'][-1]:.4f}")
+            # Calculate NEW METRICS
+            defense_success_rate = self.calculate_defense_success_rate(detected_sybils_count, actual_sybils)
+            metrics['defense_success_rate'].append(defense_success_rate)
+
+            defense_effectiveness = self.calculate_defense_effectiveness(current_accuracy)
+            metrics['defense_effectiveness'].append(defense_effectiveness)
+
+            print(f"  Global Accuracy: {current_accuracy:.4f}")
             print(f"  Detection Precision: {detection_stats.get('precision', 0):.4f}")
             print(f"  Detection Recall: {detection_stats.get('recall', 0):.4f}")
             print(f"  False Positive Rate: {fpr:.4f}")
             print(f"  Attack Success Rate: {attack_success:.4f}")
+            print(f"  Defense Success Rate: {defense_success_rate:.4f}")
+            print(f"  Defense Effectiveness: {defense_effectiveness:.4f}")
 
         print("\nEnhanced Defense Training Completed.")
         return metrics, total_tp, total_actual_sybils
 
     def visualize_comprehensive_results(self, metrics):
-        plt.figure(figsize=(15, 10))
+        plt.figure(figsize=(18, 12))
 
-        plt.subplot(2, 3, 1)
+        plt.subplot(3, 3, 1)
         plt.plot(metrics['global_accuracy'], label='Global Accuracy', color='blue', linewidth=2)
         plt.title('Global Model Accuracy Over Time')
         plt.xlabel('Training Round')
@@ -1005,7 +1056,7 @@ class FederatedLearningWithImprovedDefense:
         plt.legend()
         plt.grid(True, alpha=0.3)
 
-        plt.subplot(2, 3, 2)
+        plt.subplot(3, 3, 2)
         plt.plot(metrics['detection_precision'], label='Precision', color='orange', linewidth=2)
         plt.title('Detection Precision Over Time')
         plt.xlabel('Training Round')
@@ -1013,7 +1064,7 @@ class FederatedLearningWithImprovedDefense:
         plt.legend()
         plt.grid(True, alpha=0.3)
 
-        plt.subplot(2, 3, 3)
+        plt.subplot(3, 3, 3)
         plt.plot(metrics['detection_recall'], label='Recall', color='purple', linewidth=2)
         plt.title('Detection Recall Over Time')
         plt.xlabel('Training Round')
@@ -1021,7 +1072,7 @@ class FederatedLearningWithImprovedDefense:
         plt.legend()
         plt.grid(True, alpha=0.3)
 
-        plt.subplot(2, 3, 4)
+        plt.subplot(3, 3, 4)
         plt.plot(metrics['false_positive_rate'], label='False Positive Rate', color='red', linewidth=2)
         plt.title('False Positive Rate Over Time')
         plt.xlabel('Training Round')
@@ -1029,11 +1080,48 @@ class FederatedLearningWithImprovedDefense:
         plt.legend()
         plt.grid(True, alpha=0.3)
 
-        plt.subplot(2, 3, 5)
+        plt.subplot(3, 3, 5)
         plt.plot(metrics['attack_success_rate'], label='Attack Success Rate', color='darkred', linewidth=2)
         plt.title('Attack Success Rate Over Time')
         plt.xlabel('Training Round')
         plt.ylabel('Success Rate')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        # NEW PLOTS for Defense Success Rate and Defense Effectiveness
+        plt.subplot(3, 3, 6)
+        plt.plot(metrics['defense_success_rate'], label='Defense Success Rate', color='green', linewidth=2)
+        plt.title('Defense Success Rate Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('Defense Success Rate')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        plt.subplot(3, 3, 7)
+        plt.plot(metrics['defense_effectiveness'], label='Defense Effectiveness', color='teal', linewidth=2)
+        plt.title('Defense Effectiveness Over Time')
+        plt.xlabel('Training Round')
+        plt.ylabel('Defense Effectiveness')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        # Combined view of key metrics
+        plt.subplot(3, 3, 8)
+        plt.plot(metrics['defense_success_rate'], label='Defense Success Rate', color='green', linewidth=2)
+        plt.plot(metrics['defense_effectiveness'], label='Defense Effectiveness', color='teal', linewidth=2)
+        plt.plot([1 - asr for asr in metrics['attack_success_rate']], label='1 - Attack Success', color='darkred', linewidth=2, linestyle='--')
+        plt.title('Defense Metrics Comparison')
+        plt.xlabel('Training Round')
+        plt.ylabel('Rate/Effectiveness')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        # Detection accuracy over time
+        plt.subplot(3, 3, 9)
+        plt.plot(metrics['detection_accuracy'], label='Detection Accuracy', color='navy', linewidth=2)
+        plt.title('Overall Detection Accuracy')
+        plt.xlabel('Training Round')
+        plt.ylabel('Detection Accuracy')
         plt.legend()
         plt.grid(True, alpha=0.3)
 
@@ -1082,7 +1170,34 @@ def main():
     print(f"Average False Positive Rate: {np.mean(enhanced_metrics['false_positive_rate']):.4f}")
     print(f"Average Attack Success Rate: {np.mean(enhanced_metrics['attack_success_rate']):.4f}")
     print(f"Average Detection Accuracy: {np.mean(enhanced_metrics['detection_accuracy']):.4f}")
+    
+    # NEW METRICS in summary
+    print(f"Average Defense Success Rate: {np.mean(enhanced_metrics['defense_success_rate']):.4f}")
+    print(f"Average Defense Effectiveness: {np.mean(enhanced_metrics['defense_effectiveness']):.4f}")
+    
     print(f"Total Sybils Detected: {total_tp} out of {total_actual_sybils}")
-   
+
+    # Additional insights for new metrics
+    print("\n" + "="*60)
+    print("DEFENSE METRICS ANALYSIS")
+    print("="*60)
+    
+    final_defense_success = enhanced_metrics['defense_success_rate'][-1]
+    final_defense_effectiveness = enhanced_metrics['defense_effectiveness'][-1]
+    
+    print(f"Final Defense Success Rate: {final_defense_success:.4f} ({final_defense_success*100:.1f}%)")
+    print(f"Final Defense Effectiveness: {final_defense_effectiveness:.4f} ({final_defense_effectiveness*100:.1f}%)")
+    
+    # Trend analysis
+    if len(enhanced_metrics['defense_success_rate']) >= 10:
+        early_dsr = np.mean(enhanced_metrics['defense_success_rate'][:10])
+        late_dsr = np.mean(enhanced_metrics['defense_success_rate'][-10:])
+        early_de = np.mean(enhanced_metrics['defense_effectiveness'][:10])
+        late_de = np.mean(enhanced_metrics['defense_effectiveness'][-10:])
+        
+        print(f"\nTrend Analysis:")
+        print(f"  Defense Success Rate: Early={early_dsr:.4f}, Late={late_dsr:.4f}, Change={late_dsr-early_dsr:+.4f}")
+        print(f"  Defense Effectiveness: Early={early_de:.4f}, Late={late_de:.4f}, Change={late_de-early_de:+.4f}")
+
 if __name__ == "__main__":
     main()
